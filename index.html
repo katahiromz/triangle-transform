@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Triangle Warp from Image</title>
+  <style>canvas { border: 1px solid black; }</style>
+</head>
+<body>
+  <canvas id="canvas" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // ソース三角形とターゲット三角形を定義
+    const srcTri = [
+      [50, 50],
+      [200, 50],
+      [100, 200]
+    ];
+
+    const dstTri = [
+      [350, 80],
+      [500, 60],
+      [420, 250]
+    ];
+
+    // アフィン変換計算
+    function getAffineTransform(src, dst) {
+      const [[x0, y0], [x1, y1], [x2, y2]] = src;
+      const [[u0, v0], [u1, v1], [u2, v2]] = dst;
+
+      const dx1 = x1 - x0, dy1 = y1 - y0;
+      const dx2 = x2 - x0, dy2 = y2 - y0;
+
+      const du1 = u1 - u0, dv1 = v1 - v0;
+      const du2 = u2 - u0, dv2 = v2 - v0;
+
+      const det = dx1 * dy2 - dx2 * dy1;
+      if (Math.abs(det) < 1e-10) return null;
+
+      const a = (du1 * dy2 - du2 * dy1) / det;
+      const b = (du2 * dx1 - du1 * dx2) / det;
+      const c = u0 - a * x0 - b * y0;
+
+      const d = (dv1 * dy2 - dv2 * dy1) / det;
+      const e = (dv2 * dx1 - dv1 * dx2) / det;
+      const f = v0 - d * x0 - e * y0;
+
+      return [a, b, c, d, e, f];
+    }
+
+    // 公開画像の読み込み
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // CORS回避のため
+    img.src = "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+
+    img.onload = function () {
+      // ソース三角形が画像に合うように描画
+      ctx.drawImage(img, 0, 0, 300, 200);
+
+      // ソース三角形領域を描画。
+      ctx.beginPath();
+      ctx.moveTo(srcTri[0][0], srcTri[0][1]);
+      ctx.lineTo(srcTri[1][0], srcTri[1][1]);
+      ctx.lineTo(srcTri[2][0], srcTri[2][1]);
+      ctx.closePath();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+
+      // アフィン変換を計算
+      const t = getAffineTransform(srcTri, dstTri);
+      if (!t) return;
+
+      ctx.save();
+
+      // クリッピング（ターゲット三角形のみ描画）
+      ctx.beginPath();
+      ctx.moveTo(...dstTri[0]);
+      ctx.lineTo(...dstTri[1]);
+      ctx.lineTo(...dstTri[2]);
+      ctx.closePath();
+      ctx.clip();
+
+      // アフィン変換適用（元画像の三角形領域を写す）
+      ctx.setTransform(t[0], t[3], t[1], t[4], t[2], t[5]);
+
+      // 元画像を再描画（変換によって転送）
+      ctx.drawImage(img, 0, 0, 300, 200);
+
+      ctx.restore();
+
+      // 三角形の枠線（視覚的確認用）
+      ctx.strokeStyle = "red";
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const [x, y] = dstTri[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    };
+  </script>
+</body>
+</html>
