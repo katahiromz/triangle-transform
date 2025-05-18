@@ -61,9 +61,9 @@
 
       // ソース三角形領域を描画。
       ctx.beginPath();
-      ctx.moveTo(srcTri[0][0], srcTri[0][1]);
-      ctx.lineTo(srcTri[1][0], srcTri[1][1]);
-      ctx.lineTo(srcTri[2][0], srcTri[2][1]);
+      ctx.moveTo(...srcTri[0]);
+      ctx.lineTo(...srcTri[1]);
+      ctx.lineTo(...srcTri[2]);
       ctx.closePath();
       ctx.lineWidth = 1;
       ctx.strokeStyle = "black";
